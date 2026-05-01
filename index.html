@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RETRIEVIX - Lost & Found Platform</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <h2>RETRIEVIX</h2>
+            </div>
+            <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
+            <div class="nav-menu" id="navMenu">
+                <a href="#" class="nav-link" data-page="home">Home</a>
+                <a href="#" class="nav-link" data-page="browse">Browse</a>
+                <a href="#" class="nav-link" data-page="dashboard" id="dashboardLink" style="display: none;">Dashboard</a>
+                <a href="#" class="nav-link" data-page="messages" id="messagesLink" style="display: none;">Messages <span class="badge" id="msgBadge" style="display:none">0</span></a>
+                <div class="auth-buttons">
+                    <button class="btn btn--outline btn--sm" id="loginBtn">Login</button>
+                    <button class="btn btn--primary btn--sm" id="registerBtn">Register</button>
+                    <div class="user-menu" id="userMenu" style="display: none;">
+                        <span id="userName"></span>
+                        <button class="btn btn--outline btn--sm" id="logoutBtn">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Container -->
+    <main id="mainContent">
+        <!-- Home Page -->
+        <div id="homePage" class="page active">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="container">
+                    <div class="hero-content">
+                        <h1>Simplify the process of returning lost items in public places</h1>
+                        <p>Bridging the gap between people who have lost items and those who have found them with AI-powered matching technology.</p>
+                        <div class="hero-stats">
+                            <div class="stat">
+                                <h3>95%</h3>
+                                <p>AI Match Accuracy</p>
+                            </div>
+                            <div class="stat">
+                                <h3>48hrs</h3>
+                                <p>Average Recovery Time</p>
+                            </div>
+                            <div class="stat">
+                                <h3>10k+</h3>
+                                <p>Items Reunited</p>
+                            </div>
+                        </div>
+                        <div class="hero-actions">
+                            <button class="btn btn--primary btn--lg" id="reportLostBtn">Report Lost Item</button>
+                            <button class="btn btn--secondary btn--lg" id="reportFoundBtn">Report Found Item</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Features Section -->
+            <section class="features">
+                <div class="container">
+                    <h2>How RETRIEVIX Works</h2>
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">📱</div>
+                            <h3>Report Items</h3>
+                            <p>Easily report lost or found items with detailed descriptions and photos</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🤖</div>
+                            <h3>AI Matching</h3>
+                            <p>Our AI algorithm matches lost and found items automatically</p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">🔒</div>
+                            <h3>Safe Communication</h3>
+                            <p>Connect with item owners through our secure platform</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Browse Page -->
+        <div id="browsePage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1>Browse Items</h1>
+                    <p>Search through lost and found items to find what you're looking for</p>
+                </div>
+
+                <!-- Search and Filters -->
+                <div class="search-section">
+                    <div class="search-bar">
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search items...">
+                        <button class="btn btn--primary" id="searchBtn">Search</button>
+                    </div>
+                    <div class="filters">
+                        <select class="form-control" id="categoryFilter">
+                            <option value="">All Categories</option>
+                        </select>
+                        <select class="form-control" id="locationFilter">
+                            <option value="">All Locations</option>
+                        </select>
+                        <input type="date" class="form-control" id="dateFilter">
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="lost">Lost Items</button>
+                    <button class="tab-btn" data-tab="found">Found Items</button>
+                </div>
+
+                <!-- Items Grid -->
+                <div class="items-grid" id="itemsGrid"></div>
+                
+                <!-- Pagination -->
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1>My Dashboard</h1>
+                    <p>Manage your lost and found items</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="dashboard-section">
+                        <h3>My Lost Items</h3>
+                        <div id="myLostItems" class="items-list"></div>
+                    </div>
+                    <div class="dashboard-section">
+                        <h3>My Found Items</h3>
+                        <div id="myFoundItems" class="items-list"></div>
+                    </div>
+                    <div class="dashboard-section">
+                        <h3>Smart Match Suggestions</h3>
+                        <div id="matchSuggestions" class="items-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Page -->
+        <div id="messagesPage" class="page">
+            <div class="container messages-wrapper">
+                <div class="messages-container">
+                    <div class="messages-sidebar" id="messagesSidebar">
+                        <div class="sidebar-header">
+                            <h2>Chats</h2>
+                            <button class="btn-close-sidebar" id="closeSidebarBtn">×</button>
+                        </div>
+                        <div class="search-rooms">
+                            <input type="text" class="form-control" id="searchRoomsInput" placeholder="Search conversations...">
+                        </div>
+                        <div class="rooms-list" id="roomsList">
+                            <!-- Rooms render here -->
+                        </div>
+                    </div>
+                    <div class="messages-panel">
+                        <div class="panel-header" id="chatHeader">
+                            <button class="btn-open-sidebar" id="openSidebarBtn">☰</button>
+                            <div class="chat-user-info" id="chatUserInfo">
+                                <h3>Select a chat</h3>
+                            </div>
+                        </div>
+                        <div class="messages-stream" id="messagesStream">
+                            <div class="chat-placeholder">Select a conversation to start messaging.</div>
+                        </div>
+                        <div class="message-input-area" id="messageInputArea" style="display: none;">
+                            <input type="text" class="form-control" id="messageInput" placeholder="Type a message...">
+                            <button class="btn btn--primary" id="sendMessageBtn"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Report Item Page -->
+        <div id="reportPage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1 id="reportTitle">Report Item</h1>
+                    <p id="reportSubtitle">Fill out the form below to report your item</p>
+                </div>
+
+                <form id="reportForm" class="report-form">
+                    <div class="form-group">
+                        <label class="form-label">Item Name *</label>
+                        <input type="text" class="form-control" id="itemName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Category *</label>
+                        <select class="form-control" id="itemCategory" required>
+                            <option value="">Select a category</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Detailed Description *</label>
+                        <textarea class="form-control" id="itemDescription" rows="4" required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" id="locationLabel">Location *</label>
+                        <input type="text" class="form-control" id="itemLocation" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" id="dateLabel">Date *</label>
+                        <input type="date" class="form-control" id="itemDate" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Contact Information *</label>
+                        <input type="email" class="form-control" id="contactInfo" placeholder="Email address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Upload Image</label>
+                        <div class="image-upload" id="imageUpload">
+                            <input type="file" id="imageInput" accept="image/*" style="display: none;">
+                            <div class="upload-placeholder">
+                                <span>Click or drag image here</span>
+                            </div>
+                            <div class="image-preview" id="imagePreview" style="display: none;">
+                                <img id="previewImg" alt="Preview">
+                                <button type="button" class="remove-image" id="removeImage">×</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn--outline" id="cancelReport">Cancel</button>
+                        <button type="submit" class="btn btn--primary">Submit Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Item Detail Page -->
+        <div id="itemDetailPage" class="page">
+            <div class="container">
+                <div class="item-detail" id="itemDetail"></div>
+                <div class="similar-items" id="similarItems">
+                    <h3>Similar Items</h3>
+                    <div class="items-grid" id="similarItemsGrid"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Login Modal -->
+    <div class="modal hidden" id="loginModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Login to RETRIEVIX</h3>
+                <button class="modal-close" id="closeLoginModal">×</button>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="loginEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" id="loginPassword" required>
+                </div>
+                <button type="submit" class="btn btn--primary btn--full-width">Login</button>
+            </form>
+            <p class="modal-footer">Don't have an account? <a href="#" id="switchToRegister">Register here</a></p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div class="modal hidden" id="registerModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Create Account</h3>
+                <button class="modal-close" id="closeRegisterModal">×</button>
+            </div>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" class="form-control" id="registerName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email</label>
+                    <input type="email" class="form-control" id="registerEmail" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    <input type="tel" class="form-control" id="registerPhone" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" class="form-control" id="registerPassword" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" class="form-control" id="confirmPassword" required>
+                </div>
+                <button type="submit" class="btn btn--primary btn--full-width">Create Account</button>
+            </form>
+            <p class="modal-footer">Already have an account? <a href="#" id="switchToLogin">Login here</a></p>
+        </div>
+    </div>
+
+    <!-- Contact Modal -->
+    <div class="modal hidden" id="contactModal">
+        <div class="modal-overlay"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Contact Information</h3>
+                <button class="modal-close" id="closeContactModal">×</button>
+            </div>
+            <div class="contact-info">
+                <p><strong>Email:</strong> <span id="contactEmail"></span></p>
+                <p><strong>Safety Tips:</strong></p>
+                <ul>
+                    <li>Meet in public places</li>
+                    <li>Verify item details before meeting</li>
+                    <li>Bring a friend if possible</li>
+                    <li>Trust your instincts</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

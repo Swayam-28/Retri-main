@@ -1,0 +1,35 @@
+{
+  "name": "retrievix",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Ketan5050/Retrievix.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Ketan5050/Retrievix/issues"
+  },
+  "homepage": "https://github.com/Ketan5050/Retrievix#readme",
+  "dependencies": {
+    "axios": "^1.13.1",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^5.1.0",
+    "mongoose": "^8.17.2",
+    "nodemailer": "^7.0.10",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "@ljharb/tsconfig": "^0.3.2"
+  }
+}

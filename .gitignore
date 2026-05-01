@@ -1,0 +1,16 @@
+node_modules/
+.env
+.parcel-cache/
+dist/
+.vscode/
+
+# Python caching
+__pycache__/
+*.pyc
+.venv/
+clip_service/.venv/
+venv/
+clip_service/venv/
+
+# System files
+.DS_Store
