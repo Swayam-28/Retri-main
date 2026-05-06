@@ -57,9 +57,33 @@ const messageSchema = new mongoose.Schema({
   read: { type: Boolean, default: false }
 });
 
+const chatRoomSchema = new mongoose.Schema({
+  roomId: { type: String, unique: true },
+  users: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  itemTitle1: String,
+  itemTitle2: String,
+  createdAt: { type: Date, default: Date.now }
+});
+
+const foundItemLogSchema = new mongoose.Schema({
+  title1: String,
+  title2: String,
+  description1: String,
+  description2: String,
+  location1: String,
+  location2: String,
+  contact1: String,
+  contact2: String,
+  user1Id: String,
+  user2Id: String,
+  timestamp: { type: Date, default: Date.now }
+});
+
 const User = mongoose.model("User", userSchema);
 const Item = mongoose.model("Item", itemSchema);
 const Message = mongoose.model("Message", messageSchema);
+const ChatRoom = mongoose.model("ChatRoom", chatRoomSchema);
+const FoundItemLog = mongoose.model("FoundItemLog", foundItemLogSchema);
 
 // MongoDB connection - Using MongoDB Atlas
 mongoose.connect(process.env.MONGODB_URI)
@@ -332,6 +356,22 @@ app.get("/api/items/:id/matches", async (req, res) => {
             await axios.post(GOOGLE_APPS_SCRIPT_WEBHOOK, mailOptions);
             console.log(`Email sent for match between ${originalItem._id} and ${item._id}`);
             
+            // Create chat room
+            try {
+              const existingRoom = await ChatRoom.findOne({ roomId: chatRoomId });
+              if (!existingRoom) {
+                const newRoom = new ChatRoom({
+                  roomId: chatRoomId,
+                  users: [originalUser._id, matchedUser._id],
+                  itemTitle1: originalItem.title,
+                  itemTitle2: item.title
+                });
+                await newRoom.save();
+              }
+            } catch (roomErr) {
+              console.error('Error creating chat room:', roomErr);
+            }
+            
             // Mark as notified for both items so it doesn't send again
             if (!originalItem.notifiedMatches) originalItem.notifiedMatches = [];
             originalItem.notifiedMatches.push(item._id.toString());
@@ -361,6 +401,27 @@ app.get("/api/items/:id/matches", async (req, res) => {
 app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
   try {
     const { id1, id2 } = req.params;
+
+    // Fetch items to save in history log
+    const item1 = await Item.findById(id1);
+    const item2 = await Item.findById(id2);
+
+    if (item1 || item2) {
+      // Save to FoundItemLog
+      const log = new FoundItemLog({
+        title1: item1 ? item1.title : 'Deleted Item',
+        title2: item2 ? item2.title : 'Deleted Item',
+        description1: item1 ? item1.description : '',
+        description2: item2 ? item2.description : '',
+        location1: item1 ? item1.location : '',
+        location2: item2 ? item2.location : '',
+        contact1: item1 ? item1.contactInfo : '',
+        contact2: item2 ? item2.contactInfo : '',
+        user1Id: item1 ? item1.userId : '',
+        user2Id: item2 ? item2.userId : ''
+      });
+      await log.save();
+    }
 
     // Delete both items from the database
     const deleted1 = await Item.findByIdAndDelete(id1);
@@ -474,6 +535,27 @@ app.get("/api/messages/:roomId", async (req, res) => {
     res.json({ success: true, messages });
   } catch (err) {
     res.json({ success: false, message: "Failed to fetch messages" });
+  }
+});
+
+// ✅ Fetch chat rooms for a user
+app.get("/api/chats/user/:userId", async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const rooms = await ChatRoom.find({ users: userId }).populate('users', 'name email');
+    res.json({ success: true, rooms });
+  } catch (err) {
+    res.json({ success: false, message: "Failed to fetch chat rooms" });
+  }
+});
+
+// ✅ Fetch item history logs
+app.get("/api/history", async (req, res) => {
+  try {
+    const logs = await FoundItemLog.find({}).sort({ timestamp: -1 });
+    res.json({ success: true, logs });
+  } catch (err) {
+    res.json({ success: false, message: "Failed to fetch history logs" });
   }
 });
 

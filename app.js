@@ -237,11 +237,13 @@ class RetrievixApp {
         const userMenu = document.getElementById('userMenu');
         const dashboardLink = document.getElementById('dashboardLink');
         const messagesLink = document.getElementById('messagesLink');
+        const historyLink = document.getElementById('historyLink');
         if (loginBtn) loginBtn.style.display = 'none';
         if (registerBtn) registerBtn.style.display = 'none';
         if (userMenu) userMenu.style.display = 'flex';
         if (dashboardLink) dashboardLink.style.display = 'block';
         if (messagesLink) messagesLink.style.display = 'block';
+        if (historyLink) historyLink.style.display = 'block';
         const userName = document.getElementById('userName');
         if (userName) userName.textContent = this.currentUser?.name || 'User';
 
@@ -259,11 +261,13 @@ class RetrievixApp {
         const userMenu = document.getElementById('userMenu');
         const dashboardLink = document.getElementById('dashboardLink');
         const messagesLink = document.getElementById('messagesLink');
+        const historyLink = document.getElementById('historyLink');
         if (loginBtn) loginBtn.style.display = 'inline-flex';
         if (registerBtn) registerBtn.style.display = 'inline-flex';
         if (userMenu) userMenu.style.display = 'none';
         if (dashboardLink) dashboardLink.style.display = 'none';
         if (messagesLink) messagesLink.style.display = 'none';
+        if (historyLink) historyLink.style.display = 'none';
         if (this.socket) {
             this.socket.disconnect();
             this.socket = null;
@@ -288,6 +292,13 @@ class RetrievixApp {
                 return;
             }
             this.loadDashboard();
+        } else if (page === 'history') {
+            if (!this.currentUser) {
+                this.showModal('loginModal');
+                this.navigateToPage('home');
+                return;
+            }
+            this.loadHistory();
         }
     }
 
@@ -744,7 +755,7 @@ class RetrievixApp {
                     const badgeClass = isHighMatch ? 'score-high' : (item.matchScore >= 60 ? 'score-medium' : 'score-low');
                     
                     let originalItemId = userItems.find(u => u.type !== item.type)?._id; // Simplified association for UI
-                    const chatBtn = isHighMatch ? `<button class="btn btn--sm btn-chat" onclick="event.stopPropagation(); app.navigateToPage('messages'); app.openChatRoom('match_${originalItemId}_${item._id}')">💬 Open Chat Room</button>` : '';
+                    const chatBtn = isHighMatch ? `<button class="btn btn--sm btn-chat" onclick="event.stopPropagation(); app.navigateToPage('messages'); app.openChatRoom('match_${originalItemId}_${item._id}', 'Match Chat')">💬 Open Chat Room</button>` : '';
 
                     return `
                     <div class="item-list-card" onclick="app.showItemDetail('${item._id}')">
@@ -811,6 +822,47 @@ class RetrievixApp {
         }
     }
 
+    async loadHistory() {
+        const grid = document.getElementById('historyGrid');
+        if (!grid) return;
+        
+        grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary); padding: var(--space-32);">Loading history...</div>';
+        
+        try {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            
+            if (data.success && data.logs && data.logs.length > 0) {
+                grid.innerHTML = data.logs.map(log => {
+                    const d = new Date(log.timestamp).toLocaleDateString();
+                    return `
+                    <div class="item-card" style="border-top: 4px solid #10B981;">
+                        <div class="item-content">
+                            <h3 class="item-title">Matched Items</h3>
+                            <div style="font-size: 0.9rem; margin-bottom: 8px;">
+                                <strong>Item 1:</strong> ${log.title1} (${log.location1})<br>
+                                <strong>Item 2:</strong> ${log.title2} (${log.location2})
+                            </div>
+                            <div class="item-meta">
+                                <span>📅 Returned on: ${d}</span>
+                            </div>
+                            <div class="item-meta" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                                <span>Contacts:</span><br>
+                                <span style="font-size: 0.8rem; opacity: 0.8">${log.contact1 || 'User A'} & ${log.contact2 || 'User B'}</span>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            } else {
+                grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary); padding: var(--space-32);">No returned items in history yet.</div>';
+            }
+        } catch (err) {
+            console.error('History fetch error:', err);
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary); padding: var(--space-32);">Error loading history.</div>';
+        }
+    }
+
     showToast(type, title, message) {
         const toast = document.createElement('div');
         toast.className = `toast toast--${type}`;
@@ -823,30 +875,55 @@ class RetrievixApp {
     }
 
     // ====== Chat System ======
-    loadChatRooms() {
-        // Mock rooms based on user items for demonstration
-        // In reality, you'd fetch active rooms from DB
+    async loadChatRooms() {
         const roomsList = document.getElementById('roomsList');
-        if (!roomsList) return;
+        if (!roomsList || !this.currentUser) return;
         
-        // For UI demo, showing a static "Support" room + any dynamic active room
-        roomsList.innerHTML = `
-            <div class="room-item" onclick="app.openChatRoom('support_room')">
-                <div class="room-avatar">S</div>
-                <div class="room-info">
-                    <div class="room-name">Support Team</div>
-                    <div class="room-preview">How can we help you?</div>
-                </div>
-            </div>
-        `;
+        try {
+            const res = await fetch(`/api/chats/user/${this.currentUser._id}`);
+            const data = await res.json();
+            
+            if (data.success && data.rooms && data.rooms.length > 0) {
+                roomsList.innerHTML = data.rooms.map(room => {
+                    // Extract other user's name
+                    const otherUser = room.users.find(u => u._id !== this.currentUser._id) || room.users[0];
+                    const chatName = otherUser ? `${this.currentUser.name} & ${otherUser.name}` : 'Match Chat';
+                    const initials = otherUser ? otherUser.name.charAt(0) : '#';
+                    
+                    return `
+                    <div class="room-item" onclick="app.openChatRoom('${room.roomId}', '${chatName.replace(/'/g, "\\'")}')">
+                        <div class="room-avatar">${initials}</div>
+                        <div class="room-info">
+                            <div class="room-name">${chatName}</div>
+                            <div class="room-preview">${room.itemTitle1 || 'Item'} / ${room.itemTitle2 || 'Item'}</div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+            } else {
+                roomsList.innerHTML = `
+                    <div class="room-item" onclick="app.openChatRoom('support_room', 'Support Team')">
+                        <div class="room-avatar">S</div>
+                        <div class="room-info">
+                            <div class="room-name">Support Team</div>
+                            <div class="room-preview">How can we help you?</div>
+                        </div>
+                    </div>
+                `;
+            }
+        } catch (err) {
+            console.error("Failed to load chat rooms:", err);
+        }
     }
 
-    async openChatRoom(roomId) {
+    async openChatRoom(roomId, roomName) {
         if (!this.socket) return;
         this.activeRoomId = roomId;
         this.socket.emit("join_room", roomId);
         
-        document.getElementById('chatUserInfo').innerHTML = `<h3>Chat: ${roomId.substring(0,12)}...</h3><span style="font-size: 0.8rem; color: #10B981;">● Online</span>`;
+        const displayRoomName = roomName || (roomId === 'support_room' ? 'Support Team' : 'Match Chat');
+        
+        document.getElementById('chatUserInfo').innerHTML = `<h3>${displayRoomName}</h3><span style="font-size: 0.8rem; color: #10B981;">● Online</span>`;
         document.getElementById('messageInputArea').style.display = 'flex';
         document.getElementById('messagesSidebar').classList.remove('open'); // close on mobile
         
@@ -871,10 +948,10 @@ class RetrievixApp {
         const existing = document.querySelector(`.room-item[onclick*="${roomId}"]`);
         if (!existing) {
             document.getElementById('roomsList').insertAdjacentHTML('afterbegin', `
-                <div class="room-item active" onclick="app.openChatRoom('${roomId}')">
+                <div class="room-item active" onclick="app.openChatRoom('${roomId}', '${displayRoomName.replace(/'/g, "\\'")}')">
                     <div class="room-avatar">#</div>
                     <div class="room-info">
-                        <div class="room-name">Match Chat</div>
+                        <div class="room-name">${displayRoomName}</div>
                         <div class="room-preview">Tap to view</div>
                     </div>
                 </div>
