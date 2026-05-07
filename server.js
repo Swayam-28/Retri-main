@@ -42,6 +42,7 @@ const itemSchema = new mongoose.Schema({
   location: String,
   type: String,  // "lost" or "found"
   date: String,
+  time: String,
   contactInfo: String,
   userId: String,
   image: String,
@@ -316,7 +317,11 @@ app.get("/api/items/:id/matches", async (req, res) => {
             // Generate the confirmation link and chat room link
             const backendUrl = req.protocol + '://' + req.get('host');
             const confirmationLink = `${backendUrl}/api/items/confirm-match/${originalItem._id}/${item._id}`;
-            const chatRoomId = `match_${originalItem._id}_${item._id}`;
+            
+            const lostId = originalItem.type === 'lost' ? originalItem._id : item._id;
+            const foundId = originalItem.type === 'found' ? originalItem._id : item._id;
+            const chatRoomId = `match_${lostId}_${foundId}`;
+            
             const chatRoomLink = `${backendUrl}/?page=messages&room=${chatRoomId}`;
 
             const mailOptions = {
@@ -556,6 +561,19 @@ app.get("/api/history", async (req, res) => {
     res.json({ success: true, logs });
   } catch (err) {
     res.json({ success: false, message: "Failed to fetch history logs" });
+  }
+});
+
+// ✅ Fetch user profile and their public items
+app.get("/api/users/:id/profile", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id, 'name');
+    if (!user) return res.json({ success: false, message: "User not found" });
+
+    const items = await Item.find({ userId: req.params.id });
+    res.json({ success: true, user, items });
+  } catch (err) {
+    res.json({ success: false, message: "Failed to fetch profile" });
   }
 });
 

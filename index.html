@@ -15,7 +15,7 @@
     <nav class="navbar">
         <div class="container">
             <div class="nav-brand">
-                <h2>RETRIEVIX</h2>
+                <a href="#" onclick="app.navigateToPage('home'); return false;"><h2>RETRIEVIX</h2></a>
             </div>
             <button class="mobile-menu-btn" id="mobileMenuBtn">☰</button>
             <div class="nav-menu" id="navMenu">
@@ -73,17 +73,17 @@
                 <div class="container">
                     <h2>How RETRIEVIX Works</h2>
                     <div class="features-grid">
-                        <div class="feature-card">
+                        <div class="feature-card" onclick="app.showTutorial('report')" style="cursor: pointer;">
                             <div class="feature-icon">📱</div>
                             <h3>Report Items</h3>
                             <p>Easily report lost or found items with detailed descriptions and photos</p>
                         </div>
-                        <div class="feature-card">
+                        <div class="feature-card" onclick="app.showTutorial('ai')" style="cursor: pointer;">
                             <div class="feature-icon">🤖</div>
                             <h3>AI Matching</h3>
                             <p>Our AI algorithm matches lost and found items automatically</p>
                         </div>
-                        <div class="feature-card">
+                        <div class="feature-card" onclick="app.showTutorial('safe')" style="cursor: pointer;">
                             <div class="feature-icon">🔒</div>
                             <h3>Safe Communication</h3>
                             <p>Connect with item owners through our secure platform</p>
@@ -129,6 +129,21 @@
                 
                 <!-- Pagination -->
                 <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- User Profile Page -->
+        <div id="profilePage" class="page">
+            <div class="container">
+                <div class="page-header">
+                    <h1 id="profileName">User Profile</h1>
+                    <p>Items reported by this user</p>
+                </div>
+                <div class="tabs">
+                    <button class="tab-btn active" data-profile-tab="lost" onclick="app.switchProfileTab('lost')">Lost Items</button>
+                    <button class="tab-btn" data-profile-tab="found" onclick="app.switchProfileTab('found')">Found Items</button>
+                </div>
+                <div class="items-grid" id="profileItemsGrid"></div>
             </div>
         </div>
 
@@ -236,9 +251,15 @@
                         <input type="text" class="form-control" id="itemLocation" required>
                     </div>
 
-                    <div class="form-group">
-                        <label class="form-label" id="dateLabel">Date *</label>
-                        <input type="date" class="form-control" id="itemDate" required>
+                    <div class="form-group" style="display: flex; gap: 1rem;">
+                        <div style="flex: 1;">
+                            <label class="form-label" id="dateLabel">Date *</label>
+                            <input type="date" class="form-control" id="itemDate" required>
+                        </div>
+                        <div style="flex: 1;">
+                            <label class="form-label" id="timeLabel">Time *</label>
+                            <input type="time" class="form-control" id="itemTime" required>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -268,17 +289,32 @@
             </div>
         </div>
 
-        <!-- Item Detail Page -->
-        <div id="itemDetailPage" class="page">
-            <div class="container">
-                <div class="item-detail" id="itemDetail"></div>
-                <div class="similar-items" id="similarItems">
-                    <h3>Similar Items</h3>
-                    <div class="items-grid" id="similarItemsGrid"></div>
-                </div>
-            </div>
-        </div>
     </main>
+
+    <!-- Item Detail Modal -->
+    <div class="modal hidden" id="itemDetailModal">
+        <div class="modal-overlay" onclick="app.hideModal('itemDetailModal')"></div>
+        <div class="modal-content" style="max-width: 600px; padding: 1.5rem;">
+            <div class="modal-header" style="margin-bottom: 1rem;">
+                <h3 id="modalItemTitle">Item Details</h3>
+                <button class="modal-close" onclick="app.hideModal('itemDetailModal')">×</button>
+            </div>
+            <div id="modalItemContent"></div>
+        </div>
+    </div>
+
+    <!-- Tutorial Modal -->
+    <div class="modal hidden" id="tutorialModal">
+        <div class="modal-overlay" onclick="app.hideModal('tutorialModal')"></div>
+        <div class="modal-content" style="max-width: 500px; text-align: center;">
+            <div class="modal-header">
+                <h3 id="tutorialTitle">Tutorial</h3>
+                <button class="modal-close" onclick="app.hideModal('tutorialModal')">×</button>
+            </div>
+            <div id="tutorialContent"></div>
+            <div class="tutorial-progress" id="tutorialProgress" style="margin-top: 20px; display: flex; justify-content: center; gap: 5px;"></div>
+        </div>
+    </div>
 
     <!-- Login Modal -->
     <div class="modal hidden" id="loginModal">

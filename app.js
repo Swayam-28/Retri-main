@@ -245,7 +245,11 @@ class RetrievixApp {
         if (messagesLink) messagesLink.style.display = 'block';
         if (historyLink) historyLink.style.display = 'block';
         const userName = document.getElementById('userName');
-        if (userName) userName.textContent = this.currentUser?.name || 'User';
+        if (userName) {
+            userName.textContent = this.currentUser?.name || 'User';
+            userName.style.cursor = 'pointer';
+            userName.onclick = () => this.showProfile(this.currentUser._id);
+        }
 
         // Connect Socket.IO
         if (!this.socket && typeof io !== 'undefined') {
@@ -299,6 +303,8 @@ class RetrievixApp {
                 return;
             }
             this.loadHistory();
+        } else if (page === 'profile') {
+            // Handled dynamically via showProfile
         }
     }
 
@@ -365,6 +371,7 @@ class RetrievixApp {
             description: document.getElementById('itemDescription').value,
             location: document.getElementById('itemLocation').value,
             date: document.getElementById('itemDate').value,
+            time: document.getElementById('itemTime')?.value || '',
             contactInfo: document.getElementById('contactInfo').value,
             userId: this.currentUser._id,
             image: this.uploadedImage || this.getPlaceholderImage(document.getElementById('itemCategory').value),
@@ -558,71 +565,37 @@ class RetrievixApp {
             }
 
             const item = data.item;
-            const detail = document.getElementById('itemDetail');
-            if (!detail) return;
+            document.getElementById('modalItemTitle').textContent = item.title;
+            
+            let editDeleteHtml = '';
+            if (this.currentUser && item.userId === this.currentUser._id) {
+                editDeleteHtml = `
+                    <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px dashed var(--border-dark); text-align: right;">
+                        <button class="btn btn--outline btn--sm" onclick="app.deleteItem('${item._id}', '${item.type}')">Delete Item</button>
+                    </div>
+                `;
+            }
 
-            detail.innerHTML = `
-                <img src="${item.image}" alt="${item.title}" class="item-detail-image">
-                <div class="item-detail-content">
-                    <div class="item-detail-header">
-                        <div>
-                            <h1 class="item-detail-title">${item.title}</h1>
-                            <span class="item-category">${item.category}</span>
-                        </div>
-                        <button class="btn btn--primary" onclick="app.showContact('${item.contactInfo}')">Contact Owner</button>
-                    </div>
-                    <div class="item-detail-meta">
-                        <div class="meta-item">
-                            <div class="meta-label">Location ${item.type === 'lost' ? 'Lost' : 'Found'}</div>
-                            <div class="meta-value">${item.location}</div>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-label">Date ${item.type === 'lost' ? 'Lost' : 'Found'}</div>
-                            <div class="meta-value">${item.date}</div>
-                        </div>
-                        <div class="meta-item">
-                            <div class="meta-label">Status</div>
-                            <div class="meta-value">${item.status || 'active'}</div>
-                        </div>
-                    </div>
-                    <p class="item-detail-description">${item.description}</p>
+            document.getElementById('modalItemContent').innerHTML = `
+                <img src="${item.image}" alt="${item.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                <div style="margin-bottom: 1rem;">
+                    <span class="item-category">${item.category}</span>
+                    <span style="float:right; font-weight: 500; opacity: 0.8;">Reported by: ${item.contactInfo}</span>
                 </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; background: rgba(0,0,0,0.03); padding: 1rem; border-radius: var(--radius-sm);">
+                    <div><strong>📍 Location:</strong> ${item.location}</div>
+                    <div><strong>📅 Date:</strong> ${item.date}</div>
+                    <div><strong>⏰ Time:</strong> ${item.time || 'N/A'}</div>
+                    <div><strong>ℹ️ Status:</strong> ${item.status || 'Active'}</div>
+                </div>
+                <p style="color: var(--text-muted);">${item.description}</p>
+                ${editDeleteHtml}
             `;
 
-            // Similar items block (optional if your HTML includes #similarItemsGrid)
-            this.showSimilarItems(item);
-
-            this.navigateToPage('itemDetail');
+            this.showModal('itemDetailModal');
         } catch (err) {
             console.error("Error loading item details:", err);
             this.showToast('error', 'Error', 'Could not load item details');
-        }
-    }
-
-    async showSimilarItems(item) {
-        const grid = document.getElementById('similarItemsGrid');
-        if (!grid) return;
-
-        const result = await this.apiRequest(`${item._id}/matches`);
-
-        if (result.success && result.items.length > 0) {
-            grid.innerHTML = result.items.map(similar => `
-                <div class="item-card" onclick="app.showItemDetail('${similar._id}')">
-                    <span class="match-percentage">${similar.matchScore}% Match</span>
-                    <img src="${similar.image}" alt="${similar.title}" class="item-image">
-                    <div class="item-content">
-                        <h3 class="item-title">${similar.title}</h3>
-                        <span class="item-category">${similar.category}</span>
-                        <p class="item-description">${similar.description}</p>
-                        <div class="item-meta">
-                            <span>📍 ${similar.location}</span>
-                            <span>📅 ${similar.date}</span>
-                        </div>
-                    </div>
-                </div>
-            `).join('');
-        } else {
-            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--color-text-secondary);">No similar items found.</div>';
         }
     }
 
@@ -754,8 +727,17 @@ class RetrievixApp {
                     const isHighMatch = item.matchScore >= 80;
                     const badgeClass = isHighMatch ? 'score-high' : (item.matchScore >= 60 ? 'score-medium' : 'score-low');
                     
-                    let originalItemId = userItems.find(u => u.type !== item.type)?._id; // Simplified association for UI
-                    const chatBtn = isHighMatch ? `<button class="btn btn--sm btn-chat" onclick="event.stopPropagation(); app.navigateToPage('messages'); app.openChatRoom('match_${originalItemId}_${item._id}', 'Match Chat')">💬 Open Chat Room</button>` : '';
+                    let originalItemType = item.type === 'lost' ? 'found' : 'lost';
+                    let originalItemId = userItems.find(u => u.type === originalItemType)?._id; 
+                    
+                    let chatRoomId = '';
+                    if (originalItemId) {
+                        const lostId = originalItemType === 'lost' ? originalItemId : item._id;
+                        const foundId = originalItemType === 'found' ? originalItemId : item._id;
+                        chatRoomId = `match_${lostId}_${foundId}`;
+                    }
+
+                    const chatBtn = (isHighMatch && chatRoomId) ? `<button class="btn btn--sm btn-chat" onclick="event.stopPropagation(); app.navigateToPage('messages'); app.openChatRoom('${chatRoomId}', 'Match Chat')">💬 Open Chat Room</button>` : '';
 
                     return `
                     <div class="item-list-card" onclick="app.showItemDetail('${item._id}')">
@@ -796,6 +778,113 @@ class RetrievixApp {
     hideModal(modalId) {
         const el = document.getElementById(modalId);
         if (el) el.classList.add('hidden');
+        if (modalId === 'tutorialModal' && this.tutorialInterval) {
+            clearInterval(this.tutorialInterval);
+        }
+    }
+
+    async showProfile(userId) {
+        try {
+            const res = await fetch(`/api/users/${userId}/profile`);
+            const data = await res.json();
+            if (!data.success) {
+                this.showToast('error', 'Profile Not Found', 'Could not load user profile.');
+                return;
+            }
+            
+            document.getElementById('profileName').textContent = data.user.name + "'s Profile";
+            this.profileItems = data.items || [];
+            this.switchProfileTab('lost');
+            this.navigateToPage('profile');
+        } catch (err) {
+            console.error(err);
+            this.showToast('error', 'Error', 'Failed to load profile.');
+        }
+    }
+
+    switchProfileTab(tab) {
+        document.querySelectorAll('[data-profile-tab]').forEach(btn => btn.classList.remove('active'));
+        const btn = document.querySelector(`[data-profile-tab="${tab}"]`);
+        if (btn) btn.classList.add('active');
+
+        const grid = document.getElementById('profileItemsGrid');
+        if (!grid) return;
+
+        const items = (this.profileItems || []).filter(i => i.type === tab);
+        
+        if (!items.length) {
+            grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 2rem;">No items found.</div>';
+            return;
+        }
+
+        grid.innerHTML = items.map(item => `
+            <div class="item-card" onclick="app.showItemDetail('${item._id}')">
+                <img src="${item.image}" alt="${item.title}" class="item-image">
+                <div class="item-content">
+                    <h3 class="item-title">${item.title}</h3>
+                    <span class="item-category">${item.category}</span>
+                    <div class="item-meta">
+                        <span>📍 ${item.location}</span>
+                        <span>📅 ${item.date}</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    showTutorial(type) {
+        const title = document.getElementById('tutorialTitle');
+        const content = document.getElementById('tutorialContent');
+        const progress = document.getElementById('tutorialProgress');
+        
+        let steps = [];
+        
+        if (type === 'report') {
+            title.textContent = "How to Report Items";
+            steps = [
+                { icon: '📝', text: 'Register and log in to your account.' },
+                { icon: '📸', text: 'Click Report Lost or Found Item and upload a photo.' },
+                { icon: '📍', text: 'Fill in detailed description, location, date, and time.' },
+                { icon: '✅', text: 'Submit the report to our database.' }
+            ];
+        } else if (type === 'ai') {
+            title.textContent = "How AI Matching Works";
+            steps = [
+                { icon: '🔍', text: 'Item submitted to our secure database.' },
+                { icon: '🤖', text: 'AI scans and compares descriptions and images.' },
+                { icon: '📧', text: 'Match email sent to both users if accuracy > 80%.' },
+                { icon: '💬', text: 'A dedicated chat room is automatically created.' }
+            ];
+        } else if (type === 'safe') {
+            title.textContent = "Safe Communication";
+            steps = [
+                { icon: '🤝', text: 'A strong AI match is found between two items.' },
+                { icon: '🔔', text: 'Both users are notified via email and dashboard.' },
+                { icon: '💬', text: 'Open the Chat Room to talk directly on the platform.' },
+                { icon: '🛡️', text: 'Communicate safely without sharing personal phone numbers.' }
+            ];
+        }
+
+        content.innerHTML = `
+            <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary);">${steps[0].icon}</div>
+            <h4 style="font-size: 1.25rem; margin-bottom: 1rem;">${steps[0].text}</h4>
+        `;
+        
+        progress.innerHTML = steps.map((_, i) => `<div style="width: 10px; height: 10px; border-radius: 50%; background: ${i === 0 ? 'var(--primary)' : 'rgba(0,0,0,0.1)'};"></div>`).join('');
+        
+        let currentStep = 0;
+        if (this.tutorialInterval) clearInterval(this.tutorialInterval);
+        
+        this.tutorialInterval = setInterval(() => {
+            currentStep = (currentStep + 1) % steps.length;
+            content.innerHTML = `
+                <div style="font-size: 3rem; margin-bottom: 1rem; color: var(--primary); animation: fadeIn 0.5s;">${steps[currentStep].icon}</div>
+                <h4 style="font-size: 1.25rem; margin-bottom: 1rem; animation: fadeIn 0.5s;">${steps[currentStep].text}</h4>
+            `;
+            progress.innerHTML = steps.map((_, i) => `<div style="width: 10px; height: 10px; border-radius: 50%; background: ${i === currentStep ? 'var(--primary)' : 'rgba(0,0,0,0.1)'}; transition: 0.3s;"></div>`).join('');
+        }, 3000);
+        
+        this.showModal('tutorialModal');
     }
 
     // ====== Delete Item ======

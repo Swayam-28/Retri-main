@@ -177,6 +177,15 @@ a {
   align-items: center;
 }
 
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-main);
+}
+
 .nav-brand h2 {
   font-size: 1.75rem;
   background: linear-gradient(135deg, var(--primary), var(--secondary));
