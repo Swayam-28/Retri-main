@@ -256,6 +256,20 @@ app.post("/api/items", async (req, res) => {
   }
 });
 
+// ✅ Get single item
+app.get("/api/items/:id", async (req, res) => {
+  try {
+    const item = await Item.findById(req.params.id);
+    if (!item) {
+      return res.json({ success: false, message: "Item not found" });
+    }
+    res.json({ success: true, item });
+  } catch (err) {
+    console.error("Error fetching item:", err);
+    res.json({ success: false, message: "Failed to fetch item" });
+  }
+});
+
 // // ✅ Get items
 app.get("/api/items/:id/matches", async (req, res) => {
   try {

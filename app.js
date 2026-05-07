@@ -694,7 +694,7 @@ class RetrievixApp {
                         if (!res.ok) throw new Error("Match fetch failed");
                         return res.json();
                     })
-                    .then(data => data.success ? data.items : [])
+                    .then(data => data.success ? data.items.map(match => ({...match, originalItemId: item._id, originalItemType: item.type})) : [])
             );
 
             // 3. Wait for all match requests to complete
@@ -727,8 +727,8 @@ class RetrievixApp {
                     const isHighMatch = item.matchScore >= 80;
                     const badgeClass = isHighMatch ? 'score-high' : (item.matchScore >= 60 ? 'score-medium' : 'score-low');
                     
-                    let originalItemType = item.type === 'lost' ? 'found' : 'lost';
-                    let originalItemId = userItems.find(u => u.type === originalItemType)?._id; 
+                    let originalItemType = item.originalItemType;
+                    let originalItemId = item.originalItemId; 
                     
                     let chatRoomId = '';
                     if (originalItemId) {
