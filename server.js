@@ -446,6 +446,20 @@ app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
     const deleted1 = await Item.findByIdAndDelete(id1);
     const deleted2 = await Item.findByIdAndDelete(id2);
 
+    // Delete associated chat room and messages
+    let lostId = id1;
+    let foundId = id2;
+    if (item1 && item1.type === 'found') {
+      lostId = id2;
+      foundId = id1;
+    } else if (item2 && item2.type === 'lost') {
+      lostId = id2;
+      foundId = id1;
+    }
+    const chatRoomId = `match_${lostId}_${foundId}`;
+    await ChatRoom.findOneAndDelete({ roomId: chatRoomId });
+    await Message.deleteMany({ roomId: chatRoomId });
+
     if (deleted1 || deleted2) {
       res.send(`
         <html>

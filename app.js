@@ -577,7 +577,7 @@ class RetrievixApp {
             }
 
             document.getElementById('modalItemContent').innerHTML = `
-                <img src="${item.image}" alt="${item.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: var(--radius-sm); margin-bottom: 1rem;">
+                <img src="${item.image}" alt="${item.title}" style="width: 100%; max-height: 500px; object-fit: contain; background: rgba(0,0,0,0.05); border-radius: var(--radius-sm); margin-bottom: 1rem;">
                 <div style="margin-bottom: 1rem;">
                     <span class="item-category">${item.category}</span>
                     <span style="float:right; font-weight: 500; opacity: 0.8;">Reported by: ${item.contactInfo}</span>
@@ -737,7 +737,7 @@ class RetrievixApp {
                         chatRoomId = `match_${lostId}_${foundId}`;
                     }
 
-                    const chatBtn = (isHighMatch && chatRoomId) ? `<button class="btn btn--sm btn-chat" onclick="event.stopPropagation(); app.navigateToPage('messages'); app.openChatRoom('${chatRoomId}', 'Match Chat')">💬 Open Chat Room</button>` : '';
+                    const chatBtn = (isHighMatch && chatRoomId) ? `<button class="btn btn--sm btn-chat" onclick="event.stopPropagation(); app.navigateToPage('messages'); app.openChatRoom('${chatRoomId}')">💬 Open Chat Room</button>` : '';
 
                     return `
                     <div class="item-list-card" onclick="app.showItemDetail('${item._id}')">
@@ -1010,7 +1010,14 @@ class RetrievixApp {
         this.activeRoomId = roomId;
         this.socket.emit("join_room", roomId);
         
-        const displayRoomName = roomName || (roomId === 'support_room' ? 'Support Team' : 'Match Chat');
+        const existing = document.querySelector(`.room-item[onclick*="${roomId}"]`);
+        let actualName = roomName;
+        if (!actualName && existing) {
+            const nameEl = existing.querySelector('.room-name');
+            if (nameEl) actualName = nameEl.textContent;
+        }
+        
+        const displayRoomName = actualName || (roomId === 'support_room' ? 'Support Team' : 'Match Chat');
         
         document.getElementById('chatUserInfo').innerHTML = `<h3>${displayRoomName}</h3><span style="font-size: 0.8rem; color: #10B981;">● Online</span>`;
         document.getElementById('messageInputArea').style.display = 'flex';
