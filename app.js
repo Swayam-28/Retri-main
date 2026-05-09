@@ -1041,7 +1041,6 @@ class RetrievixApp {
         }
 
         // Add to sidebar if not there
-        const existing = document.querySelector(`.room-item[onclick*="${roomId}"]`);
         if (!existing) {
             document.getElementById('roomsList').insertAdjacentHTML('afterbegin', `
                 <div class="room-item active" onclick="app.openChatRoom('${roomId}', '${displayRoomName.replace(/'/g, "\\'")}')">
