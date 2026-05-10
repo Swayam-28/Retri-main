@@ -298,8 +298,8 @@ app.get("/api/items/:id/matches", async (req, res) => {
     // 2. Fetch the full item details for the matches from MongoDB
     const potentialMatchItems = await Item.find({
       '_id': { $in: matchIds }, // Find all items whose ID is in our matched list
-      'type': oppositeType      // Only include items of the opposite type
-      // 'userId': { $ne: originalItem.userId } // TEMPORARILY DISABLED for testing purposes
+      'type': oppositeType,     // Only include items of the opposite type
+      'userId': { $ne: originalItem.userId } // Prevent matching with user's own items
     });
 
     // 3. Add the match score (distance) to the final items
