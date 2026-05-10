@@ -256,6 +256,7 @@ a {
 .hero {
   padding: 6rem 0;
   position: relative;
+  overflow: hidden;
 }
 
 .hero::before {
@@ -320,6 +321,7 @@ a {
 
 .hero-stats {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
   gap: 3rem;
   margin-bottom: 4rem;
@@ -1263,6 +1265,9 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 768px) {
   .items-grid, .dashboard-grid {
     grid-template-columns: 1fr;
+  }
+  .messages-wrapper {
+    height: calc(100vh - 220px);
   }
   .navbar .container {
     flex-wrap: wrap;

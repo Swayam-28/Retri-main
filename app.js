@@ -42,6 +42,8 @@ class RetrievixApp {
                 }
             }, 500);
         }
+        
+        this.fetchStats();
     }
 
     // ====== API Helper ======
@@ -54,6 +56,19 @@ class RetrievixApp {
         } catch (err) {
             console.error("API Error:", err);
             return { success: false, message: "Server error" };
+        }
+    }
+
+    async fetchStats() {
+        try {
+            const res = await fetch('/api/history');
+            const data = await res.json();
+            if (data.success && data.logs) {
+                const countEl = document.getElementById('itemsReunitedCount');
+                if (countEl) countEl.textContent = data.logs.length;
+            }
+        } catch (err) {
+            console.error("Stats Error:", err);
         }
     }
 
@@ -271,7 +286,6 @@ class RetrievixApp {
         if (userMenu) userMenu.style.display = 'none';
         if (dashboardLink) dashboardLink.style.display = 'none';
         if (messagesLink) messagesLink.style.display = 'none';
-        if (historyLink) historyLink.style.display = 'none';
         if (this.socket) {
             this.socket.disconnect();
             this.socket = null;
@@ -297,11 +311,6 @@ class RetrievixApp {
             }
             this.loadDashboard();
         } else if (page === 'history') {
-            if (!this.currentUser) {
-                this.showModal('loginModal');
-                this.navigateToPage('home');
-                return;
-            }
             this.loadHistory();
         } else if (page === 'profile') {
             // Handled dynamically via showProfile

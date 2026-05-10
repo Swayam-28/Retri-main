@@ -22,7 +22,7 @@
                 <a href="#" class="nav-link" data-page="home">Home</a>
                 <a href="#" class="nav-link" data-page="browse">Browse</a>
                 <a href="#" class="nav-link" data-page="dashboard" id="dashboardLink" style="display: none;">Dashboard</a>
-                <a href="#" class="nav-link" data-page="history" id="historyLink" style="display: none;">History</a>
+                <a href="#" class="nav-link" data-page="history" id="historyLink">Logs</a>
                 <a href="#" class="nav-link" data-page="messages" id="messagesLink" style="display: none;">Messages <span class="badge" id="msgBadge" style="display:none">0</span></a>
                 <div class="auth-buttons">
                     <button class="btn btn--outline btn--sm" id="loginBtn">Login</button>
@@ -55,8 +55,8 @@
                                 <h3>48hrs</h3>
                                 <p>Average Recovery Time</p>
                             </div>
-                            <div class="stat">
-                                <h3>10k+</h3>
+                            <div class="stat" onclick="app.navigateToPage('history')" style="cursor: pointer;">
+                                <h3 id="itemsReunitedCount">10k+</h3>
                                 <p>Items Reunited</p>
                             </div>
                         </div>
@@ -176,7 +176,7 @@
         <div id="historyPage" class="page">
             <div class="container">
                 <div class="page-header">
-                    <h1>Found Items History</h1>
+                    <h1>Logs</h1>
                     <p>Log of successfully returned items</p>
                 </div>
                 <div class="items-grid" id="historyGrid">
@@ -290,6 +290,32 @@
         </div>
 
     </main>
+
+    <!-- Footer -->
+    <footer style="background-color: #1a1a1a; color: #fff; padding: 3rem 0; margin-top: auto;">
+        <div class="container" style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 2rem;">
+            <div style="flex: 1; min-width: 250px;">
+                <h3 style="margin-bottom: 1rem; color: #fff; font-size: 1.2rem;">About</h3>
+                <p style="color: #aaa; line-height: 1.6; font-size: 0.9rem;">RETRIEVIX bridges the gap between people who have lost items and those who have found them using AI-powered matching technology to simplify the recovery process.</p>
+            </div>
+            <div style="flex: 1; min-width: 250px;">
+                <h3 style="margin-bottom: 1rem; color: #fff; font-size: 1.2rem;">Contact Us</h3>
+                <p style="color: #aaa; line-height: 1.6; font-size: 0.9rem;">
+                    Email: support@retrievix.com<br>
+                    Phone: +1 (555) 123-4567<br>
+                    Address: 123 Tech Avenue, Innovation City
+                </p>
+                <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+                    <a href="#" style="color: #aaa; font-size: 1.2rem; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'"><i class="fab fa-facebook"></i></a>
+                    <a href="#" style="color: #aaa; font-size: 1.2rem; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'"><i class="fab fa-twitter"></i></a>
+                    <a href="#" style="color: #aaa; font-size: 1.2rem; transition: color 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#aaa'"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+        <div style="text-align: center; color: #777; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #333; font-size: 0.85rem;">
+            <p>&copy; 2026 RETRIEVIX. All rights reserved.</p>
+        </div>
+    </footer>
 
     <!-- Item Detail Modal -->
     <div class="modal hidden" id="itemDetailModal">
