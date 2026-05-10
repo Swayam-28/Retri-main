@@ -470,6 +470,8 @@ app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
               <p style="color: #555;">Thank you for using Retrievix to find your belongings. We're glad we could help!</p>
               <br/>
               <p style="color: #777; font-size: 14px;">You may now close this window.</p>
+              <br/>
+              <a href="/" style="display: inline-block; padding: 10px 20px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Return to Retrievix</a>
             </div>
           </body>
         </html>
@@ -484,6 +486,8 @@ app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
               <p style="color: #555;">They may have been deleted by the other user first.</p>
               <br/>
               <p style="color: #777; font-size: 14px;">You may now close this window.</p>
+              <br/>
+              <a href="/" style="display: inline-block; padding: 10px 20px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">Return to Retrievix</a>
             </div>
           </body>
         </html>
