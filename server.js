@@ -252,13 +252,14 @@ app.get("/api/items/:id/matches", async (req, res) => {
 
     const finalItems = potentialMatchItems.map(item => {
       const matchInfo = matches.find(m => m.itemId === item._id.toString());
-      const cosineSimilarity = 1 - (matchInfo.distance / 2);
-      const matchScore = Math.round(Math.max(0, (cosineSimilarity - 0.4) / 0.6) * 100);
+      // CHANGED: We now use the 'score' directly from the AI service instead of manual math
+      const matchScore = Math.round(matchInfo.score * 100);
       return { ...item.toObject(), matchScore };
     });
 
     let originalItemNeedsSave = false;
     for (const item of finalItems) {
+      // Logic for notifications remains at 80% threshold
       if (item.matchScore >= 80 && !(originalItem.notifiedMatches || []).includes(item._id.toString())) {
         const originalUser = await User.findById(originalItem.userId);
         const matchedUser = await User.findById(item.userId);
