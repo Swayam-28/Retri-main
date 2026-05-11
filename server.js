@@ -241,6 +241,13 @@ app.get("/api/items/:id/matches", async (req, res) => {
     const response = await axios.get(`${AI_SERVICE_URL}/find_matches`, { params: { item_id: id } });
     const matches = response.data.matches || [];
 
+    // --- DEBUGGING LOGS ---
+    console.log(`[DEBUG] AI returned ${matches.length} raw matches for item ${id}`);
+    if (matches.length > 0) {
+      console.log(`[DEBUG] Top match similarity score: ${matches[0].score}`);
+      console.log(`[DEBUG] All match IDs from AI:`, matches.map(m => m.itemId));
+    }
+
     if (matches.length === 0) return res.json({ success: true, items: [] });
 
     const matchIds = matches.map(m => m.itemId);
@@ -250,16 +257,17 @@ app.get("/api/items/:id/matches", async (req, res) => {
       'userId': { $ne: originalItem.userId }
     });
 
+    console.log(`[DEBUG] Potential matches after type/user filter: ${potentialMatchItems.length}`);
+
     const finalItems = potentialMatchItems.map(item => {
       const matchInfo = matches.find(m => m.itemId === item._id.toString());
-      // CHANGED: We now use the 'score' directly from the AI service instead of manual math
+      // Use the score provided by the AI service (app.py)
       const matchScore = Math.round(matchInfo.score * 100);
       return { ...item.toObject(), matchScore };
     });
 
     let originalItemNeedsSave = false;
     for (const item of finalItems) {
-      // Logic for notifications remains at 80% threshold
       if (item.matchScore >= 80 && !(originalItem.notifiedMatches || []).includes(item._id.toString())) {
         const originalUser = await User.findById(originalItem.userId);
         const matchedUser = await User.findById(item.userId);
@@ -310,6 +318,7 @@ app.get("/api/items/:id/matches", async (req, res) => {
     if (originalItemNeedsSave) await originalItem.save();
     res.json({ success: true, items: finalItems });
   } catch (err) {
+    console.error(`[ERROR] Match fetch failed:`, err.message);
     res.json({ success: false, message: "Match fetch failed" });
   }
 });
