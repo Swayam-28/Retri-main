@@ -1,4 +1,3 @@
-
 import io
 import base64
 import numpy as np
@@ -208,9 +207,13 @@ def search():
             faiss_id = indices[0][i]
             match_item_id = id_map.get(faiss_id)
             if match_item_id:
+                raw_distance = float(distances[0][i])
+                similarity_score = 1.0 - (raw_distance / 2.0)
+                
                 matches.append({
                     "itemId": match_item_id,
-                    "distance": float(distances[0][i])
+                    "distance": raw_distance,
+                    "score": round(similarity_score, 4)
                 })
 
         print(f"Found {len(matches)} matches for query '{query}'")
@@ -256,9 +259,15 @@ def find_matches():
             if match_item_id == item_id_to_match or match_item_id is None:
                 continue
             
+            raw_distance = float(distances[0][i])
+            
+            # Convert FAISS squared L2 distance to a 0.0 - 1.0 similarity score
+            similarity_score = 1.0 - (raw_distance / 2.0)
+
             matches.append({
                 "itemId": match_item_id,
-                "distance": float(distances[0][i])
+                "distance": raw_distance,         # Keep this for backward compatibility
+                "score": round(similarity_score, 4) # Node.js can use this directly!
             })
 
         print(f"Found {len(matches)} matches for item {item_id_to_match}")
