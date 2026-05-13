@@ -20,7 +20,7 @@ const nodemailer = require("nodemailer");
 
 // SMTP Configuration
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.titan.email",
+  host: process.env.SMTP_HOST || "smtpout.secureserver.net",
   port: process.env.SMTP_PORT || 465,
   secure: true, 
   auth: {
