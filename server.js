@@ -345,6 +345,15 @@ app.get("/api/items/search", async (req, res) => {
   }
 });
 
+app.get("/api/history", async (req, res) => {
+  try {
+    const logs = await FoundItemLog.find().sort({ timestamp: -1 });
+    res.json({ success: true, logs });
+  } catch (err) {
+    res.json({ success: false, message: err.message });
+  }
+});
+
 app.get("/api/messages/:roomId", async (req, res) => {
   try {
     const messages = await Message.find({ roomId: req.params.roomId }).sort({ timestamp: 1 });
