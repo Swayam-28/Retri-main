@@ -225,8 +225,14 @@ app.get("/api/items/:id/matches", async (req, res) => {
     const oppositeType = originalItem.type === 'lost' ? 'found' : 'lost';
     
     // 1. Get matches from AI Service
-    const response = await axios.get(`${AI_SERVICE_URL}/find_matches`, { params: { item_id: id } });
-    const matches = response.data.matches || [];
+    let matches = [];
+    try {
+      const response = await axios.get(`${AI_SERVICE_URL}/find_matches`, { params: { item_id: id } });
+      matches = response.data.matches || [];
+    } catch (apiErr) {
+      console.log(`[DEBUG] AI match fetch failed for ${id} (possibly not indexed yet):`, apiErr.message);
+      return res.json({ success: true, items: [] });
+    }
 
     console.log(`[DEBUG] AI returned ${matches.length} raw matches for item ${id}`);
 
