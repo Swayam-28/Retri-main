@@ -235,6 +235,56 @@ app.delete("/api/items/:id", async (req, res) => {
   }
 });
 
+app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
+  try {
+    const { id1, id2 } = req.params;
+    
+    await Item.findByIdAndDelete(id1);
+    await Item.findByIdAndDelete(id2);
+    
+    try {
+      await axios.delete(`${AI_SERVICE_URL}/delete_item/${id1}`);
+      await axios.delete(`${AI_SERVICE_URL}/delete_item/${id2}`);
+      console.log(`[MATCH CONFIRMED] Items removed from AI index.`);
+    } catch (aiError) {
+      console.error(`AI deletion failed:`, aiError.message);
+    }
+
+    // 4. Find and delete the associated chat room and all its messages
+    const lostId = item1?.type === 'lost' ? id1 : id2;
+    const foundId = item1?.type === 'found' ? id1 : id2;
+    const chatRoomId = `match_${lostId}_${foundId}`;
+    const chatRoomIdAlt = `match_${foundId}_${lostId}`;
+
+    const deletedRoom = await ChatRoom.findOneAndDelete({ 
+      roomId: { $in: [chatRoomId, chatRoomIdAlt] }
+    });
+    if (deletedRoom) {
+      const deletedMessages = await Message.deleteMany({ roomId: deletedRoom.roomId });
+      console.log(`[MATCH CONFIRMED] Chat room "${deletedRoom.roomId}" and ${deletedMessages.deletedCount} messages deleted.`);
+    }
+    
+    res.send(`
+      <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 80px;">
+        <div style="font-size: 60px;">🎉</div>
+        <h1 style="color: #28a745; font-size: 32px;">Match Confirmed!</h1>
+        <p style="color: #555; max-width: 400px; margin: 0 auto 30px;">Both items have been successfully claimed and permanently removed from our database. The chat room has also been cleared.</p>
+        <p style="color: #888; font-size: 14px;">Thank you for using Retrievix!</p>
+        <a href="/" style="display: inline-block; margin-top: 20px; padding: 12px 30px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Return to Dashboard</a>
+      </div>
+    `);
+  } catch (err) {
+    console.error("[MATCH CONFIRMED] Error:", err);
+    res.status(500).send(`
+      <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
+        <h1 style="color: #dc3545;">Oops!</h1>
+        <p>There was an issue processing your request. The items may have already been removed.</p>
+        <a href="/" style="color: #4F46E5;">Return to Home</a>
+      </div>
+    `);
+  }
+});
+
 // --- THE BULLETPROOF MATCH ROUTE ---
 app.get("/api/items/:id/matches", async (req, res) => {
   try {
@@ -312,7 +362,34 @@ app.get("/api/items/:id/matches", async (req, res) => {
                 from: `"Retrievix Team" <admin@retrievix.in>`,
                 to: [originalUser.email, matchedUser.email].join(", "),
                 subject: 'Potential Match Found!',
-                html: `<h2>Great News!</h2><p>We found a potential match for your item with a confidence score of <strong>${item.matchScore}%</strong>!</p><p><a href="${chatRoomLink}" style="padding: 10px 20px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px;">Open Chat</a></p>`
+                html: `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+  <h2 style="font-size: 24px; font-weight: bold;">Great News!</h2>
+  <p>We found a potential match for your item with a high similarity score.</p>
+
+  <h3 style="font-size: 18px; margin-top: 20px;">Your Item:</h3>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Title:</strong> ${originalItem.title}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Description:</strong> ${originalItem.description}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Location:</strong> ${originalItem.location || 'Not specified'}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Contact:</strong> ${originalUser.name} - <a href="mailto:${originalUser.email}" style="color: #4F46E5; text-decoration: none;">${originalUser.email}</a>${originalUser.phone ? ` - ${originalUser.phone}` : ''}</p>
+
+  <h3 style="font-size: 18px; margin-top: 20px;">Matched Item:</h3>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Title:</strong> ${item.title}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Description:</strong> ${item.description}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Location:</strong> ${item.location || 'Not specified'}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Contact:</strong> ${matchedUser.name} - <a href="mailto:${matchedUser.email}" style="color: #4F46E5; text-decoration: none;">${matchedUser.email}</a>${matchedUser.phone ? ` - ${matchedUser.phone}` : ''}</p>
+  <p style="margin: 5px 0; font-size: 14px;"><strong>Match Score:</strong> ${item.matchScore}%</p>
+
+  <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; margin-top: 30px; text-align: center; border: 1px solid #e9ecef;">
+    <h3 style="margin-top: 0; font-size: 16px;">Did you receive your item?</h3>
+    <p style="font-size: 12px; color: #666; margin-bottom: 20px; line-height: 1.5;">
+      If you have successfully met and claimed your item, please click the button below. This will tell our system that the item has been returned to its owner and securely remove the item from our database to prevent future alerts.
+    </p>
+    <a href="${backendUrl}/api/items/confirm-match/${originalItem._id}/${item._id}" style="display: inline-block; background-color: #28a745; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-bottom: 15px; width: 80%; max-width: 300px;">Confirm Item is Mine & Remove</a><br>
+    <a href="${chatRoomLink}" style="display: inline-block; background-color: #4F46E5; color: white; padding: 12px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; width: 80%; max-width: 300px;">💬 Open Chat Room</a>
+  </div>
+</div>
+`
               });
               console.log(`[DEBUG] Email sent successfully to ${originalUser.email} and ${matchedUser.email}`);
             } catch (mailErr) {
