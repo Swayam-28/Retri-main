@@ -390,6 +390,20 @@ app.get("/api/messages/:roomId", async (req, res) => {
   }
 });
 
+app.get("/api/test-email", async (req, res) => {
+  try {
+    const info = await transporter.sendMail({
+      from: `"Retrievix Team" <admin@retrievix.in>`,
+      to: "admin@retrievix.in",
+      subject: "Titan Mail Test",
+      text: "This is a test email from the EC2 server."
+    });
+    res.json({ success: true, message: "Email sent successfully!", info });
+  } catch (err) {
+    res.json({ success: false, message: "Email failed to send", error: err.message, stack: err.stack });
+  }
+});
+
 app.get("/api/chats/user/:userId", async (req, res) => {
   try {
     const rooms = await ChatRoom.find({ users: req.params.userId }).populate('users', 'name email');
