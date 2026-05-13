@@ -283,16 +283,23 @@ app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
       console.error(`[MATCH CONFIRMED] AI deletion failed (non-critical):`, aiError.message);
     }
 
-    // STEP 5: Delete chat room and all messages (non-critical)
+    // STEP 5: Delete chat room and all messages using regex to find any room containing either item ID
     try {
-      const lostId = item1?.type === 'lost' ? id1 : id2;
-      const foundId = item1?.type === 'found' ? id1 : id2;
-      const deletedRoom = await ChatRoom.findOneAndDelete({
-        roomId: { $in: [`match_${lostId}_${foundId}`, `match_${foundId}_${lostId}`] }
+      const deletedRooms = await ChatRoom.find({
+        $or: [
+          { roomId: { $regex: id1 } },
+          { roomId: { $regex: id2 } }
+        ]
       });
-      if (deletedRoom) {
-        const deletedMsgs = await Message.deleteMany({ roomId: deletedRoom.roomId });
-        console.log(`[MATCH CONFIRMED] Chat room "${deletedRoom.roomId}" and ${deletedMsgs.deletedCount} messages deleted.`);
+
+      for (const room of deletedRooms) {
+        const deletedMsgs = await Message.deleteMany({ roomId: room.roomId });
+        await ChatRoom.findByIdAndDelete(room._id);
+        console.log(`[MATCH CONFIRMED] Chat room "${room.roomId}" and ${deletedMsgs.deletedCount} messages deleted.`);
+      }
+
+      if (deletedRooms.length === 0) {
+        console.log(`[MATCH CONFIRMED] No chat room found for items ${id1} / ${id2} (may not have been created yet).`);
       }
     } catch (chatErr) {
       console.error("[MATCH CONFIRMED] Chat cleanup failed (non-critical):", chatErr.message);
