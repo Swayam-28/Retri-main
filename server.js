@@ -215,6 +215,26 @@ app.post("/api/items", async (req, res) => {
   }
 });
 
+app.delete("/api/items/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deletedItem = await Item.findByIdAndDelete(id);
+    if (!deletedItem) {
+      return res.status(404).json({ success: false, message: "Item not found" });
+    }
+
+    try {
+      await axios.delete(`${AI_SERVICE_URL}/delete_item/${id}`);
+    } catch (aiError) {
+      console.error(`AI deletion failed:`, aiError.message);
+    }
+    
+    res.json({ success: true, message: "Item deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
 // --- THE BULLETPROOF MATCH ROUTE ---
 app.get("/api/items/:id/matches", async (req, res) => {
   try {

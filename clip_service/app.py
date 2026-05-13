@@ -179,6 +179,24 @@ def add_item():
         print(f"An error occurred in /add_item: {e}")
         return jsonify({"error": "An internal server error occurred"}), 500
 
+@app.route("/delete_item/<item_id>", methods=["DELETE"])
+def delete_item(item_id):
+    """
+    Removes the item from the ID mappings so it is ignored in future searches.
+    """
+    try:
+        if item_id in item_id_to_faiss_id:
+            faiss_id = item_id_to_faiss_id[item_id]
+            del item_id_to_faiss_id[item_id]
+            if faiss_id in id_map:
+                del id_map[faiss_id]
+            save_persistence()
+            print(f"Deleted item {item_id} from mapping.")
+        return jsonify({"status": "success", "message": "Item mapping deleted"}), 200
+    except Exception as e:
+        print(f"An error occurred in /delete_item: {e}")
+        return jsonify({"error": "An internal server error occurred"}), 500
+
 @app.route("/search", methods=["GET"])
 def search():
     """
