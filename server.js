@@ -289,13 +289,14 @@ app.get("/api/items/:id/matches", async (req, res) => {
             // Attempt Email
             try {
                await transporter.sendMail({
-                from: `"Retrievix Team" <${process.env.SMTP_USER}>`,
-                to: [originalUser.email, matchedUser.email],
+                from: `"Retrievix Team" <admin@retrievix.in>`,
+                to: [originalUser.email, matchedUser.email].join(", "),
                 subject: 'Potential Match Found!',
-                html: `<h2>Great News!</h2><p>Potential match found (${item.matchScore}%).</p><a href="${chatRoomLink}">Open Chat</a>`
+                html: `<h2>Great News!</h2><p>We found a potential match for your item with a confidence score of <strong>${item.matchScore}%</strong>!</p><p><a href="${chatRoomLink}" style="padding: 10px 20px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 5px;">Open Chat</a></p>`
               });
+              console.log(`[DEBUG] Email sent successfully to ${originalUser.email} and ${matchedUser.email}`);
             } catch (mailErr) {
-              console.error("[DEBUG] Email notification failed, but continuing.");
+              console.error("[ERROR] Email notification failed:", mailErr);
             }
 
             if (!originalItem.notifiedMatches) originalItem.notifiedMatches = [];
