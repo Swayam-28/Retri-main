@@ -197,8 +197,8 @@ def search():
         # Normalize the query vector
         faiss.normalize_L2(query_embedding.reshape(1, -1))
 
-        # Search the index for the top 5 nearest neighbors (k=5)
-        k = 5
+        # Search the index for a larger number of neighbors to prevent deleted items from shadowing
+        k = 50
         distances, indices = index.search(query_embedding.reshape(1, -1).astype('float32'), k)
 
         # Process results
@@ -243,9 +243,9 @@ def find_matches():
         # Reconstruct the vector from the index
         vector_to_search = index.reconstruct(target_faiss_id).reshape(1, -1)
 
-        # Search the index for the top 5 nearest neighbors (k=5)
-        # We search for k+1 because the item itself will be the closest match.
-        k = 6
+        # Search the index for a larger number of neighbors to prevent deleted items from shadowing
+        # We search for a high k because deleted items might still be in the FAISS index
+        k = 50
         distances, indices = index.search(vector_to_search, k)
 
         # Process results
