@@ -236,34 +236,69 @@ app.delete("/api/items/:id", async (req, res) => {
 });
 
 app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
+  const { id1, id2 } = req.params;
   try {
-    const { id1, id2 } = req.params;
-    
+    // STEP 1: Fetch both items BEFORE deleting (so we have type, title, etc.)
+    const item1 = await Item.findById(id1).catch(() => null);
+    const item2 = await Item.findById(id2).catch(() => null);
+
+    if (!item1 && !item2) {
+      return res.send(`
+        <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 80px;">
+          <div style="font-size: 60px;">✅</div>
+          <h1 style="color: #28a745;">Already Confirmed!</h1>
+          <p style="color: #555;">These items have already been removed from our database.</p>
+          <a href="/" style="display: inline-block; margin-top: 20px; padding: 12px 30px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">Return to Dashboard</a>
+        </div>
+      `);
+    }
+
+    // STEP 2: Log to FoundItemLog (non-critical)
+    try {
+      const user1 = item1 ? await User.findById(item1.userId).catch(() => null) : null;
+      const user2 = item2 ? await User.findById(item2.userId).catch(() => null) : null;
+      await new FoundItemLog({
+        title1: item1?.title, title2: item2?.title,
+        description1: item1?.description, description2: item2?.description,
+        location1: item1?.location, location2: item2?.location,
+        contact1: user1?.email, contact2: user2?.email,
+        user1Id: item1?.userId, user2Id: item2?.userId
+      }).save();
+      console.log(`[MATCH CONFIRMED] Logged: "${item1?.title}" <-> "${item2?.title}"`);
+    } catch (logErr) {
+      console.error("[MATCH CONFIRMED] Logging failed (non-critical):", logErr.message);
+    }
+
+    // STEP 3: Delete both items from MongoDB
     await Item.findByIdAndDelete(id1);
     await Item.findByIdAndDelete(id2);
-    
+    console.log(`[MATCH CONFIRMED] Items ${id1} and ${id2} deleted from database.`);
+
+    // STEP 4: Remove from AI index (non-critical)
     try {
       await axios.delete(`${AI_SERVICE_URL}/delete_item/${id1}`);
       await axios.delete(`${AI_SERVICE_URL}/delete_item/${id2}`);
       console.log(`[MATCH CONFIRMED] Items removed from AI index.`);
     } catch (aiError) {
-      console.error(`AI deletion failed:`, aiError.message);
+      console.error(`[MATCH CONFIRMED] AI deletion failed (non-critical):`, aiError.message);
     }
 
-    // 4. Find and delete the associated chat room and all its messages
-    const lostId = item1?.type === 'lost' ? id1 : id2;
-    const foundId = item1?.type === 'found' ? id1 : id2;
-    const chatRoomId = `match_${lostId}_${foundId}`;
-    const chatRoomIdAlt = `match_${foundId}_${lostId}`;
-
-    const deletedRoom = await ChatRoom.findOneAndDelete({ 
-      roomId: { $in: [chatRoomId, chatRoomIdAlt] }
-    });
-    if (deletedRoom) {
-      const deletedMessages = await Message.deleteMany({ roomId: deletedRoom.roomId });
-      console.log(`[MATCH CONFIRMED] Chat room "${deletedRoom.roomId}" and ${deletedMessages.deletedCount} messages deleted.`);
+    // STEP 5: Delete chat room and all messages (non-critical)
+    try {
+      const lostId = item1?.type === 'lost' ? id1 : id2;
+      const foundId = item1?.type === 'found' ? id1 : id2;
+      const deletedRoom = await ChatRoom.findOneAndDelete({
+        roomId: { $in: [`match_${lostId}_${foundId}`, `match_${foundId}_${lostId}`] }
+      });
+      if (deletedRoom) {
+        const deletedMsgs = await Message.deleteMany({ roomId: deletedRoom.roomId });
+        console.log(`[MATCH CONFIRMED] Chat room "${deletedRoom.roomId}" and ${deletedMsgs.deletedCount} messages deleted.`);
+      }
+    } catch (chatErr) {
+      console.error("[MATCH CONFIRMED] Chat cleanup failed (non-critical):", chatErr.message);
     }
-    
+
+    // STEP 6: Return success page
     res.send(`
       <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 80px;">
         <div style="font-size: 60px;">🎉</div>
@@ -274,11 +309,11 @@ app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
       </div>
     `);
   } catch (err) {
-    console.error("[MATCH CONFIRMED] Error:", err);
+    console.error("[MATCH CONFIRMED] Critical Error:", err);
     res.status(500).send(`
       <div style="font-family: Arial, sans-serif; text-align: center; margin-top: 50px;">
         <h1 style="color: #dc3545;">Oops!</h1>
-        <p>There was an issue processing your request. The items may have already been removed.</p>
+        <p>There was an unexpected issue. Please try again.</p>
         <a href="/" style="color: #4F46E5;">Return to Home</a>
       </div>
     `);
@@ -417,24 +452,14 @@ app.get("/api/items/:id/matches", async (req, res) => {
   }
 });
 
-// --- Additional Routes ---
-
-app.get("/api/items/confirm-match/:id1/:id2", async (req, res) => {
+// --- GET single item by ID (used by showItemDetail popup) ---
+app.get("/api/items/:id", async (req, res) => {
   try {
-    const { id1, id2 } = req.params;
-    const item1 = await Item.findById(id1);
-    const item2 = await Item.findById(id2);
-    if (item1 || item2) {
-      await new FoundItemLog({
-        title1: item1?.title || 'Deleted', title2: item2?.title || 'Deleted',
-        user1Id: item1?.userId, user2Id: item2?.userId
-      }).save();
-    }
-    await Item.findByIdAndDelete(id1);
-    await Item.findByIdAndDelete(id2);
-    res.send("<h1>Match Confirmed!</h1><a href='/'>Home</a>");
+    const item = await Item.findById(req.params.id);
+    if (!item) return res.status(404).json({ success: false, message: "Item not found" });
+    res.json({ success: true, item });
   } catch (err) {
-    res.status(500).send("Error.");
+    res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
