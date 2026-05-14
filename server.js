@@ -460,6 +460,36 @@ app.get("/api/items/:id/matches", async (req, res) => {
   }
 });
 
+// --- GET Profile & User Items ---
+app.get("/api/users/:id/profile", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id, '-password');
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    
+    const items = await Item.find({ userId: req.params.id }).sort({ date: -1, time: -1 });
+    res.json({ success: true, user, items });
+  } catch (err) {
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// --- Search Items (MUST be before /:id) ---
+app.get("/api/items/search", async (req, res) => {
+  try {
+    const { query, type } = req.query;
+    const regex = new RegExp(query, 'i');
+    
+    // Build query object
+    const dbQuery = { $or: [{ title: regex }, { description: regex }] };
+    if (type) dbQuery.type = type;
+
+    const items = await Item.find(dbQuery).sort({ date: -1 });
+    res.json({ success: true, items });
+  } catch (err) {
+    res.json({ success: false });
+  }
+});
+
 // --- GET single item by ID (used by showItemDetail popup) ---
 app.get("/api/items/:id", async (req, res) => {
   try {
@@ -468,17 +498,6 @@ app.get("/api/items/:id", async (req, res) => {
     res.json({ success: true, item });
   } catch (err) {
     res.status(500).json({ success: false, message: "Server error" });
-  }
-});
-
-app.get("/api/items/search", async (req, res) => {
-  try {
-    const { query } = req.query;
-    const regex = new RegExp(query, 'i');
-    const items = await Item.find({ $or: [{ title: regex }, { description: regex }] });
-    res.json({ success: true, items });
-  } catch (err) {
-    res.json({ success: false });
   }
 });
 
