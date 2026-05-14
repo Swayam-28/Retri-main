@@ -403,15 +403,45 @@ class RetrievixApp {
     handleImageUpload(e) {
         const file = e.target.files?.[0];
         if (!file) return;
+        
         const reader = new FileReader();
         reader.onload = (ev) => {
-            this.uploadedImage = ev.target.result; // Base64 string
-            const img = document.getElementById('previewImg');
-            const preview = document.getElementById('imagePreview');
-            const placeholder = document.querySelector('.upload-placeholder');
-            if (img) img.src = this.uploadedImage;
-            if (preview) preview.style.display = 'block';
-            if (placeholder) placeholder.style.display = 'none';
+            const img = new Image();
+            img.onload = () => {
+                // Resize image using canvas to prevent Payload Too Large errors
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                
+                const MAX_SIZE = 1024; // Max width or height
+                if (width > height) {
+                    if (width > MAX_SIZE) {
+                        height = Math.round(height * (MAX_SIZE / width));
+                        width = MAX_SIZE;
+                    }
+                } else {
+                    if (height > MAX_SIZE) {
+                        width = Math.round(width * (MAX_SIZE / height));
+                        height = MAX_SIZE;
+                    }
+                }
+                
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                // Compress to JPEG with 80% quality
+                this.uploadedImage = canvas.toDataURL('image/jpeg', 0.8); 
+                
+                const previewImg = document.getElementById('previewImg');
+                const preview = document.getElementById('imagePreview');
+                const placeholder = document.querySelector('.upload-placeholder');
+                if (previewImg) previewImg.src = this.uploadedImage;
+                if (preview) preview.style.display = 'block';
+                if (placeholder) placeholder.style.display = 'none';
+            };
+            img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
     }
